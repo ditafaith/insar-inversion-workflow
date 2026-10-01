@@ -274,6 +274,8 @@ class BayesianMogiInversion:
                 'mean': np.mean(samples),
                 'std': np.std(samples),
                 'median': np.median(samples),
+                'percentile_2_5': np.percentile(samples, 2.5),
+                'percentile_97_5': np.percentile(samples, 97.5),
                 'percentile_16': np.percentile(samples, 16),
                 'percentile_84': np.percentile(samples, 84),
                 'min': np.min(samples),
@@ -451,45 +453,37 @@ def save_results(chain, output_prefix, acceptance_rate):
               delimiter=',', header=','.join(param_names))
     print(f"Saved: {output_prefix}_chain.csv")
     
-    # Save summary statistics
+    # Save comprehensive summary statistics to single file
     with open(f"{output_prefix}_parameters.txt", 'w') as f:
-        f.write("="*70 + "\n")
+        f.write("="*80 + "\n")
         f.write("MOGI POINT SOURCE INVERSION - BAYESIAN MCMC RESULTS\n")
-        f.write("="*70 + "\n\n")
+        f.write("="*80 + "\n\n")
         
         f.write(f"Acceptance Rate: {acceptance_rate*100:.2f}%\n")
         f.write(f"Number of posterior samples: {len(chain)}\n\n")
         
-        f.write("-"*70 + "\n")
-        f.write("PARAMETER ESTIMATES (Mean ± Std)\n")
-        f.write("-"*70 + "\n\n")
+        f.write("="*80 + "\n")
+        f.write("PARAMETER ESTIMATES\n")
+        f.write("="*80 + "\n\n")
         
         for i, name in enumerate(param_names):
             samples = chain[:, i]
             mean = np.mean(samples)
-            std = np.std(samples)
             median = np.median(samples)
-            p16 = np.percentile(samples, 16)
-            p84 = np.percentile(samples, 84)
+            p2_5 = np.percentile(samples, 2.5)
+            p97_5 = np.percentile(samples, 97.5)
+            std = np.std(samples)
             
             f.write(f"{name.upper()}\n")
-            f.write(f"  Mean:           {mean:.6f}\n")
-            f.write(f"  Std Dev:        {std:.6f}\n")
-            f.write(f"  Median:         {median:.6f}\n")
-            f.write(f"  16th percentile: {p16:.6f}\n")
-            f.write(f"  84th percentile: {p84:.6f}\n")
-            f.write(f"  Range:          [{np.min(samples):.6f}, {np.max(samples):.6f}]\n\n")
+            f.write(f"{'-'*80}\n")
+            f.write(f"  Optimal (Mean):             {mean:15.6f}\n")
+            f.write(f"  Optimal (Median):           {median:15.6f}\n")
+            f.write(f"  Std Dev:                    {std:15.6f}\n")
+            f.write(f"  95% Confidence Interval:    [{p2_5:15.6f}, {p97_5:15.6f}]\n")
+            f.write(f"  Min - Max:                  [{np.min(samples):15.6f}, {np.max(samples):15.6f}]\n")
+            f.write("\n")
     
     print(f"Saved: {output_prefix}_parameters.txt")
-    
-    # Save individual parameter files for live plotting
-    for i, name in enumerate(param_names):
-        with open(f"{output_prefix}_{name}.txt", 'w') as f:
-            samples = chain[:, i]
-            f.write(f"{name}\n")
-            f.write(f"Mean: {np.mean(samples):.6f}\n")
-            f.write(f"Std: {np.std(samples):.6f}\n")
-            f.write(f"Median: {np.median(samples):.6f}\n")
 
 
 def invert_mogi(input_file, output_prefix="point_result", n_samples=10000, 
@@ -542,9 +536,10 @@ def invert_mogi(input_file, output_prefix="point_result", n_samples=10000,
     for param_name in ['x', 'y', 'depth', 'volume_change']:
         s = stats[param_name]
         print(f"{param_name.upper():15s}")
-        print(f"  Mean:    {s['mean']:12.6f}  ±  {s['std']:.6f}")
-        print(f"  Median:  {s['median']:12.6f}")
-        print(f"  68% CI:  [{s['percentile_16']:12.6f}, {s['percentile_84']:12.6f}]")
+        print(f"  Optimal (Mean):   {s['mean']:12.6f}")
+        print(f"  Optimal (Median): {s['median']:12.6f}")
+        print(f"  Std Dev:          {s['std']:12.6f}")
+        print(f"  95% CI:           [{s['percentile_2_5']:12.6f}, {s['percentile_97_5']:12.6f}]")
         print()
     
     # Plot results
