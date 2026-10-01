@@ -1,2 +1,2 @@
 # insar-inversion-workflow
-Simple InSAR inversion workflow: from synthetic interferogram to fault slip estimation
+Simple InSAR inversion workflow: from synthetic interferogram to source estimation
